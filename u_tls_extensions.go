@@ -81,6 +81,8 @@ func ExtensionFromID(id uint16) TLSExtension {
 		return &GREASEEncryptedClientHelloExtension{}
 	case extensionRenegotiationInfo:
 		return &RenegotiationInfoExtension{}
+	case extensionTrustAnchors:
+		return &TrustAnchorsExtension{}
 	default:
 		if isGREASEUint16(id) {
 			return &UtlsGREASEExtension{}
@@ -1701,6 +1703,46 @@ func (e *RenegotiationInfoExtension) writeToUConn(uc *UConn) error {
 	case RenegotiateNever:
 	default:
 	}
+	return nil
+}
+
+// TrustAnchorsExtension implements trust_anchors
+type TrustAnchorsExtension struct {
+}
+
+func (e *TrustAnchorsExtension) Len() int {
+	return 6
+}
+
+func (e *TrustAnchorsExtension) Read(b []byte) (int, error) {
+	if len(b) < e.Len() {
+		return 0, io.ErrShortBuffer
+	}
+	b[0] = byte(extensionTrustAnchors >> 8)
+	b[1] = byte(extensionTrustAnchors & 0xff)
+	b[2] = 0
+	b[3] = 2
+	b[4] = 0
+	b[5] = 0
+	return e.Len(), io.EOF
+}
+
+func (e *TrustAnchorsExtension) UnmarshalJSON(_ []byte) error {
+	return nil
+}
+
+func (e *TrustAnchorsExtension) Write(b []byte) (int, error) {
+	fullLen := len(b)
+	extData := cryptobyte.String(b)
+	var anchors cryptobyte.String
+	if !extData.ReadUint16LengthPrefixed(&anchors) || !anchors.Empty() || !extData.Empty() {
+		return fullLen, errors.New("unable to read trust anchors extension data")
+	}
+	return fullLen, nil
+}
+
+func (e *TrustAnchorsExtension) writeToUConn(uc *UConn) error {
+	uc.HandshakeState.Hello.TrustAnchors = true
 	return nil
 }
 

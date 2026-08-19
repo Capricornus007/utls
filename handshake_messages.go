@@ -7,8 +7,9 @@ package tls
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"strings"
+
+	"golang.org/x/exp/slices"
 
 	"golang.org/x/crypto/cryptobyte"
 )
@@ -98,6 +99,7 @@ type clientHelloMsg struct {
 	pskBinders              [][]byte
 	quicTransportParameters []byte
 	encryptedClientHello    []byte
+	trustAnchors            bool
 	// extensions are only populated on the server-side of a handshake
 	extensions []uint16
 
@@ -315,6 +317,17 @@ func (m *clientHelloMsg) marshalMsgReorderOuterExts(echInner bool, outerExts []u
 				exts.AddUint8LengthPrefixed(func(exts *cryptobyte.Builder) {
 					exts.AddBytes(m.pskModes)
 				})
+			})
+		}
+	}
+	if m.trustAnchors {
+		// RFC 9881
+		if echInner {
+			echOuterExts = append(echOuterExts, extensionTrustAnchors)
+		} else {
+			exts.AddUint16(extensionTrustAnchors)
+			exts.AddUint16LengthPrefixed(func(exts *cryptobyte.Builder) {
+				exts.AddUint16(0) // 00 00
 			})
 		}
 	}
@@ -691,6 +704,12 @@ func (m *clientHelloMsg) unmarshal(data []byte) bool {
 				}
 				m.pskBinders = append(m.pskBinders, binder)
 			}
+		case extensionTrustAnchors:
+			var anchors cryptobyte.String
+			if !extData.ReadUint16LengthPrefixed(&anchors) || !anchors.Empty() {
+				return false
+			}
+			m.trustAnchors = true
 		case extensionEncryptedClientHello:
 			if !extData.ReadBytes(&m.encryptedClientHello, len(extData)) {
 				return false

@@ -384,6 +384,7 @@ type PubClientHelloMsg struct {
 	PskIdentities                    []PskIdentity
 	PskBinders                       [][]byte
 	QuicTransportParameters          []byte
+	TrustAnchors                     bool
 
 	cachedPrivateHello   *clientHelloMsg // todo: further optimize to reduce clientHelloMsg construction
 	encryptedClientHello []byte
@@ -422,6 +423,7 @@ func (chm *PubClientHelloMsg) getPrivatePtr() *clientHelloMsg {
 			pskIdentities:           PskIdentities(chm.PskIdentities).ToPrivate(),
 			pskBinders:              chm.PskBinders,
 			quicTransportParameters: chm.QuicTransportParameters,
+			trustAnchors:            chm.TrustAnchors,
 			encryptedClientHello:    chm.encryptedClientHello,
 
 			nextProtoNeg: chm.NextProtoNeg,
@@ -473,6 +475,7 @@ func (chm *clientHelloMsg) getPublicPtr() *PubClientHelloMsg {
 			PskIdentities:                    pskIdentities(chm.pskIdentities).ToPublic(),
 			PskBinders:                       chm.pskBinders,
 			QuicTransportParameters:          chm.quicTransportParameters,
+			TrustAnchors:                     chm.trustAnchors,
 			cachedPrivateHello:               chm,
 			encryptedClientHello:             chm.encryptedClientHello,
 		}
@@ -630,6 +633,21 @@ func (fh *finishedHash) getPublicObj() FinishedHash {
 type KeyShare struct {
 	Group CurveID `json:"group"`
 	Data  []byte  `json:"key_exchange,omitempty"` // optional
+}
+
+const (
+	// Internal marker bytes used by ReuseHybridAndClassicalKeyShares.
+	// ApplyPreset consumes these and generates real keyshare bytes.
+	keyShareHybridReuseMarker    byte = 0xf1
+	keyShareClassicalReuseMarker byte = 0xf2
+)
+
+// ReuseHybridAndClassicalKeyShares marks a hybrid/classical keyshare pair so
+// ApplyPreset reuses the same classical key material for both entries.
+func ReuseHybridAndClassicalKeyShares(hybrid, classical KeyShare) []KeyShare {
+	hybrid.Data = []byte{keyShareHybridReuseMarker}
+	classical.Data = []byte{keyShareClassicalReuseMarker}
+	return []KeyShare{hybrid, classical}
 }
 
 func (ks KeyShare) ToPrivate() keyShare {

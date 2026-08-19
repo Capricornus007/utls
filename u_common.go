@@ -602,7 +602,7 @@ var (
 	HelloRandomizedNoALPN = ClientHelloID{helloRandomizedNoALPN, helloAutoVers, nil, nil}
 
 	// The rest will will parrot given browser.
-	HelloFirefox_Auto = HelloFirefox_120
+	HelloFirefox_Auto = HelloFirefox_148
 	HelloFirefox_55   = ClientHelloID{helloFirefox, "55", nil, nil}
 	HelloFirefox_56   = ClientHelloID{helloFirefox, "56", nil, nil}
 	HelloFirefox_63   = ClientHelloID{helloFirefox, "63", nil, nil}
@@ -611,6 +611,7 @@ var (
 	HelloFirefox_102  = ClientHelloID{helloFirefox, "102", nil, nil}
 	HelloFirefox_105  = ClientHelloID{helloFirefox, "105", nil, nil}
 	HelloFirefox_120  = ClientHelloID{helloFirefox, "120", nil, nil}
+	HelloFirefox_148  = ClientHelloID{helloFirefox, "148", nil, nil}
 
 	HelloChrome_Auto        = HelloChrome_133
 	HelloChrome_58          = ClientHelloID{helloChrome, "58", nil, nil}
@@ -644,6 +645,10 @@ var (
 	HelloChrome_131 = ClientHelloID{helloChrome, "131", nil, nil}
 	// Chrome w/ New ALPS codepoint
 	HelloChrome_133 = ClientHelloID{helloChrome, "133", nil, nil}
+	// Chrome w/ Trust anchors (Draft)
+	HelloChrome_141_TA = ClientHelloID{helloChrome, "141", nil, nil}
+	// Chrome w/ TA and PQ MLDSA Signatures (Experimental feature)
+	HelloChrome_144_TA_PQS = ClientHelloID{helloChrome, "144", nil, nil}
 
 	HelloIOS_Auto = HelloIOS_14
 	HelloIOS_11_1 = ClientHelloID{helloIOS, "111", nil, nil} // legacy "111" means 11.1
@@ -651,14 +656,19 @@ var (
 	HelloIOS_13   = ClientHelloID{helloIOS, "13", nil, nil}
 	HelloIOS_14   = ClientHelloID{helloIOS, "14", nil, nil}
 
-	HelloAndroid_11_OkHttp = ClientHelloID{helloAndroid, "11", nil, nil}
+	HelloAndroid_OkHttp_Auto = HelloAndroid_16_OkHttp
+	HelloAndroid_11_OkHttp   = ClientHelloID{helloAndroid, "11", nil, nil}
+	HelloAndroid_16_OkHttp   = ClientHelloID{helloAndroid, "16", nil, nil}
 
-	HelloEdge_Auto = HelloEdge_85 // HelloEdge_106 seems to be incompatible with this library
+	// Probably should be deleted completely
+	HelloEdge_Auto = HelloEdge_133 // HelloEdge_106 seems to be incompatible with this library
 	HelloEdge_85   = ClientHelloID{helloEdge, "85", nil, nil}
 	HelloEdge_106  = ClientHelloID{helloEdge, "106", nil, nil}
+	HelloEdge_133  = HelloChrome_133 // It's basically Chrome 1:1
 
-	HelloSafari_Auto = HelloSafari_16_0
+	HelloSafari_Auto = HelloSafari_26_3
 	HelloSafari_16_0 = ClientHelloID{helloSafari, "16.0", nil, nil}
+	HelloSafari_26_3 = ClientHelloID{helloSafari, "26.3", nil, nil}
 
 	Hello360_Auto = Hello360_7_5 // Hello360_11_0 seems to be incompatible with this library
 	Hello360_7_5  = ClientHelloID{hello360, "7.5", nil, nil}
