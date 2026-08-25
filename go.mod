@@ -1,6 +1,6 @@
 module github.com/metacubex/utls
 
-go 1.20
+go 1.27.0
 
 retract (
 	v1.4.1 // #218
