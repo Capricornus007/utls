@@ -5,8 +5,9 @@
 package mlkem
 
 import (
+	"encoding/binary"
 	"errors"
-	"github.com/metacubex/utls/internal/byteorder"
+
 	"golang.org/x/crypto/sha3"
 )
 
@@ -310,7 +311,7 @@ func ringCompressAndEncode(s []byte, f ringElement, d uint8) []byte {
 		for cIdx < d {
 			b |= byte(c>>cIdx) << bIdx
 			bits := 8 - bIdx
-			if d-cIdx < bits {
+			if bits > d-cIdx {
 				bits = d - cIdx
 			}
 			bIdx += bits
@@ -343,7 +344,7 @@ func ringDecodeAndDecompress(b []byte, d uint8) ringElement {
 			c |= uint16(b[0]>>bIdx) << cIdx
 			c &= (1 << d) - 1
 			bits := 8 - bIdx
-			if d-cIdx < bits {
+			if bits > d-cIdx {
 				bits = d - cIdx
 			}
 			bIdx += bits
@@ -534,8 +535,8 @@ func sampleNTT(rho []byte, ii, jj byte) nttElement {
 			B.Read(buf[:])
 			off = 0
 		}
-		d1 := byteorder.LEUint16(buf[off:]) & 0b1111_1111_1111
-		d2 := byteorder.LEUint16(buf[off+1:]) >> 4
+		d1 := binary.LittleEndian.Uint16(buf[off:]) & 0b1111_1111_1111
+		d2 := binary.LittleEndian.Uint16(buf[off+1:]) >> 4
 		off += 3
 		if d1 < q {
 			a[j] = fieldElement(d1)

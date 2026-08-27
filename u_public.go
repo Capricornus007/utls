@@ -11,7 +11,7 @@ import (
 	"hash"
 	"time"
 
-	"github.com/metacubex/utls/internal/mlkem"
+	"github.com/metacubex/utls/mlkem"
 )
 
 // ClientHandshakeState includes both TLS 1.3-only and TLS 1.2-only states,
@@ -423,7 +423,6 @@ func (chm *PubClientHelloMsg) getPrivatePtr() *clientHelloMsg {
 			pskIdentities:           PskIdentities(chm.PskIdentities).ToPrivate(),
 			pskBinders:              chm.PskBinders,
 			quicTransportParameters: chm.QuicTransportParameters,
-			trustAnchors:            chm.TrustAnchors,
 			encryptedClientHello:    chm.encryptedClientHello,
 
 			nextProtoNeg: chm.NextProtoNeg,
@@ -475,7 +474,6 @@ func (chm *clientHelloMsg) getPublicPtr() *PubClientHelloMsg {
 			PskIdentities:                    pskIdentities(chm.pskIdentities).ToPublic(),
 			PskBinders:                       chm.pskBinders,
 			QuicTransportParameters:          chm.quicTransportParameters,
-			TrustAnchors:                     chm.trustAnchors,
 			cachedPrivateHello:               chm,
 			encryptedClientHello:             chm.encryptedClientHello,
 		}
@@ -913,9 +911,9 @@ func (kpk *kemPrivateKey) ToPublic() *KemPrivateKey {
 }
 
 type KeySharePrivateKeys struct {
-	CurveID    CurveID
+	// CurveID    CurveID
 	Ecdhe      *ecdh.PrivateKey
-	Mlkem      *mlkem.DecapsulationKey768
+	Mlkem      mlkem.Decapsulator
 	MlkemEcdhe *ecdh.PrivateKey
 }
 
@@ -924,7 +922,7 @@ func (ksp *KeySharePrivateKeys) ToPrivate() *keySharePrivateKeys {
 		return nil
 	}
 	return &keySharePrivateKeys{
-		curveID:    ksp.CurveID,
+		// curveID:    ksp.CurveID,
 		ecdhe:      ksp.Ecdhe,
 		mlkem:      ksp.Mlkem,
 		mlkemEcdhe: ksp.MlkemEcdhe,
@@ -936,7 +934,7 @@ func (ksp *keySharePrivateKeys) ToPublic() *KeySharePrivateKeys {
 		return nil
 	}
 	return &KeySharePrivateKeys{
-		CurveID:    ksp.curveID,
+		// CurveID:    ksp.curveID,
 		Ecdhe:      ksp.ecdhe,
 		Mlkem:      ksp.mlkem,
 		MlkemEcdhe: ksp.mlkemEcdhe,

@@ -19,7 +19,7 @@ import (
 	"strconv"
 
 	"github.com/metacubex/utls/dicttls"
-	"github.com/metacubex/utls/internal/mlkem"
+	"github.com/metacubex/utls/mlkem"
 )
 
 var ErrUnknownClientHelloID = errors.New("tls: unknown ClientHelloID")
@@ -3220,10 +3220,10 @@ func (uconn *UConn) applyPresetByID(id ClientHelloID) (err error) {
 }
 
 // ApplyPreset should only be used in conjunction with HelloCustom to apply custom specs.
-// Fields of TLSExtensions that are slices/pointers are shared across different connections with
-// same ClientHelloSpec. It is advised to use different specs and avoid any shared state.
+// The provided ClientHelloSpec is cloned before per-connection handshake state is applied.
 func (uconn *UConn) ApplyPreset(p *ClientHelloSpec) error {
 	var err error
+	p = p.clone()
 
 	err = uconn.SetTLSVers(p.TLSVersMin, p.TLSVersMax, p.Extensions)
 	if err != nil {
@@ -3297,8 +3297,7 @@ func (uconn *UConn) ApplyPreset(p *ClientHelloSpec) error {
 		uconn.HandshakeState.Hello.SessionId = sessionID[:]
 	}
 
-	uconn.Extensions = make([]TLSExtension, len(p.Extensions))
-	copy(uconn.Extensions, p.Extensions)
+	uconn.Extensions = p.Extensions
 
 	// Check whether NPN extension actually exists
 	var haveNPN bool
@@ -3487,7 +3486,7 @@ func generateRandomizedSpec(
 		return p, fmt.Errorf("using non-randomized ClientHelloID %v to generate randomized spec", id.Client)
 	}
 
-	p.CipherSuites = defaultCipherSuites()
+	p.CipherSuites = defaultCipherSuites(true)
 	shuffledSuites, err := shuffledCiphers(r)
 	if err != nil {
 		return p, err
