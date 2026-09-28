@@ -94,6 +94,14 @@ func (q *UQUICConn) Close() error {
 		return nil // never started
 	}
 	q.conn.quic.cancel()
+	// quicWaitForSignal() parks the handshake goroutine on an unconditional send
+	// to signalc (go1.26 dropped the cancelc select arms), and cancel() cannot
+	// release that send because ctx.Err() is only checked after it. Until the
+	// goroutine returns it never reaches close(blockedc), so ranging blockedc
+	// here would hang forever. Receive from signalc first; it is safe on an
+	// already-closed channel, which is what happens once the handshake is done.
+	// Mirrors QUICConn.Close above and crypto/tls as of the go1.26 rework.
+	<-q.conn.quic.signalc
 	for range q.conn.quic.blockedc {
 		// Wait for the handshake goroutine to return.
 	}
