@@ -331,6 +331,14 @@ func (c *UConn) handshakeContext(ctx context.Context) (ret error) {
 	if c.quic != nil {
 		c.quic.ctx = handshakeCtx
 		c.quic.cancel = cancel
+		// blockedc/signalc must be closed on *every* exit path. They used to be
+		// closed only by the last statement of this function, so any early return
+		// (e.g. a failing quicSetReadSecret below) left both open forever and a
+		// concurrent UQUICConn.Close() parked on them never returned.
+		defer func() {
+			close(c.quic.blockedc)
+			close(c.quic.signalc)
+		}()
 	} else if ctx.Done() != nil {
 		// Close the connection if ctx is canceled before the function returns.
 		stop := contextAfterFunc(ctx, func() {
@@ -388,6 +396,10 @@ func (c *UConn) handshakeContext(ctx context.Context) (ret error) {
 			// The QUIC layer MUST NOT decrypt 1-RTT packets prior to completing
 			// the handshake (RFC 9001, Section 5.7).
 			if err := c.quicSetReadSecret(QUICEncryptionLevelApplication, c.cipherSuite, c.in.trafficSecret); err != nil {
+				// Record it: the caller caches c.handshakeErr, and returning without
+				// setting it leaves a QUIC connection marked "no error" while the
+				// handshake never actually produced read keys.
+				c.handshakeErr = err
 				return err
 			}
 		} else {
@@ -403,8 +415,6 @@ func (c *UConn) handshakeContext(ctx context.Context) (ret error) {
 			// Truncate the text of the alert to 0 characters.
 			c.handshakeErr = fmt.Errorf("%w%.0w", c.handshakeErr, AlertError(a))
 		}
-		close(c.quic.blockedc)
-		close(c.quic.signalc)
 	}
 
 	return c.handshakeErr
