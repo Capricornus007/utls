@@ -77,6 +77,19 @@ func (q *UQUICConn) NextEvent() QUICEvent {
 		<-qs.signalc
 		<-qs.blockedc
 	}
+	// Mirror crypto/tls QUICConn.NextEvent: surface a failed handshake as a
+	// QUICErrorEvent. Without this the consumer never learns why the handshake
+	// died and can only observe its own deadline, which is how a TLS-level
+	// rejection shows up as a plain timeout.
+	if err := q.conn.handshakeErr; err != nil {
+		if qs.errorReturned {
+			return QUICEvent{Kind: QUICNoEvent}
+		}
+		qs.errorReturned = true
+		qs.events = nil
+		qs.nextEvent = 0
+		return QUICEvent{Kind: QUICErrorEvent, Err: err}
+	}
 	if qs.nextEvent >= len(qs.events) {
 		qs.events = qs.events[:0]
 		qs.nextEvent = 0
